@@ -1,0 +1,111 @@
+﻿@page "/"
+@using HtmlAgilityPack
+@inject IJSRuntime JS
+@inject LoginService LoginService
+@inject NavigationManager Navigation
+@using System.Text.Json
+@using MyOlxScraper.Data
+@using MyOlxScraper.Dto
+@using MyOlxScraper.Services
+@inject ProductService _productService
+@inject ScraperSchedulerService _scraperSchedulerService
+
+
+<PageTitle>OLX SCRAPER</PageTitle>
+
+<h1>OLX SCRAPER</h1>
+
+<p>CUSTOME CODE STUDIO</p>
+<div class="d-flex border">
+
+
+    @if (isWorking)
+    {
+        <button disabled class="btn btn-primary">Scraping...</button>
+    }
+    else
+    {
+        <button class="btn btn-primary" onclick="@Scrap">Scrap Manually</button>
+    }
+</div>
+@if (products == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Date</th>
+                <th>Title</th>
+                <th>Price</th>
+                <th>Location</th>
+            </tr>
+        </thead>
+        <tbody>
+
+            @{
+                int rowNo = 1;
+                foreach (var product in products)
+                {
+                    <tr>
+                        <td>@(rowNo++)</td>
+                        <td>@product.DatePosted.ToShortDateString()</td>
+                        <td>
+                            <a href="@product.Url" target="_blank">
+                                <img src="@product.ImageUrl" width="50" height="30" />
+                                @product.Title
+                            </a>
+                        </td>
+                        <td>
+                            <div class="d-flex"> <b> @product.Price </b><span style="font-size:xx-small"> @product.Currency</span></div>
+                        </td>
+                        <td>
+                            @{
+                                string mapUrl = $"https://www.google.com/maps?q={@product.Lat},{@product.Lon}";
+                            }
+                            <a href="@mapUrl" target="_blank">
+                                @product.Location
+                            </a>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private ProductDto[]? products;
+    string _url = "https://www.olx.pt/coracaodejesus/?search%5Bdist%5D=15";
+    bool isWorking = false;
+    int scrapedItemsCount = 0;
+    protected async Task Scrap()
+    {
+        isWorking = true;
+        scrapedItemsCount = await _productService.ScrapAsync();
+        await JS.InvokeVoidAsync("alert", $"{scrapedItemsCount} inserted.");
+        isWorking = false;
+        LoadProducts();
+    }
+    void LoadProducts()
+    {
+        products = _productService.GetAll().ToArray();
+
+    }
+
+    protected override void OnInitialized()
+    {
+        if (!LoginService.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/login");
+        }
+        else
+            LoadProducts();
+    }
+
+
+}

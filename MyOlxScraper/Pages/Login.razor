@@ -1,0 +1,35 @@
+﻿@page "/login"
+@using MyOlxScraper.Dto
+@using MyOlxScraper.Services
+@inject NavigationManager Navigation
+@inject LoginService LoginService
+
+<h3>Login</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+    <InputText @bind-Value="loginModel.Username" placeholder="Username" class="form-control" />
+    <InputText @bind-Value="loginModel.Password" placeholder="Password" type="password" class="form-control mt-2" />
+    <button type="submit" class="btn btn-primary mt-2">Login</button>
+</EditForm>
+
+@code {
+    private UserDto loginModel = new();
+    private string errorMessage;
+
+    private void HandleLogin()
+    {
+        if (LoginService.Login(loginModel.Username, loginModel.Password))
+        {
+            Navigation.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = "Invalid username or password.";
+        }
+    }
+}
